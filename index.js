@@ -34,9 +34,23 @@ async function run() {
         // const allBookCollection = client.db('bookDB').collection('books')
         const librarianCollection = client.db('librarianDB').collection('librarianBooks')
 
+        const categoryCollection = client.db('librarianDB').collection('category')
+
         // Get All Added Data
         app.get('/all-books', async (req, res) => {
             const cursor = librarianCollection.find();
+            const result = await cursor.toArray();
+            res.send(result)
+        })
+        // Get Categorized Data 
+        app.get('/categorizedBooks/:category', async (req, res) => {
+            const result = await librarianCollection.find({ book_category: req.params.category }).toArray()
+            res.send(result)
+        })
+
+        // Get All Category Data
+        app.get('/all-categories', async (req, res) => {
+            const cursor = categoryCollection.find();
             const result = await cursor.toArray();
             res.send(result)
         })
