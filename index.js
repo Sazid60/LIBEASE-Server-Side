@@ -49,6 +49,14 @@ async function run() {
             res.send(result)
         })
 
+        app.delete('/delete-books/:id', async (req, res) => {
+            const id = req.params.id
+            console.log('Please delete', id)
+            const query = { _id: new ObjectId(id) }
+            const result = await librarianCollection.deleteOne(query)
+            res.send(result)
+        })
+
 
 
         // Send a ping to confirm a successful connection
