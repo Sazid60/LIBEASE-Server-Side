@@ -35,9 +35,18 @@ async function run() {
         const librarianCollection = client.db('librarianDB').collection('librarianBooks')
 
         // Get All Added Data
-        app.get('/all-books', async(req,res)=>{
+        app.get('/all-books', async (req, res) => {
             const cursor = librarianCollection.find();
             const result = await cursor.toArray();
+            res.send(result)
+        })
+
+
+        // Get Specific Item
+        app.get('/all-books/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await librarianCollection.findOne(query)
             res.send(result)
         })
 
@@ -47,6 +56,31 @@ async function run() {
             console.log(newBook)
             const result = await librarianCollection.insertOne(newBook);
             res.send(result)
+        })
+
+        // update Book 
+        app.put('/update/:id', async (req, res) => {
+            
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true };
+            const updatedBook = req.body;
+
+            const book = {
+                $set: {
+                    book_image: updatedBook.book_image,
+                    book_name: updatedBook.book_name,
+                    book_quantity: updatedBook.book_quantity,
+                    book_author: updatedBook.book_author,
+                    book_category: updatedBook.book_category,
+                    book_rating: updatedBook.book_rating,
+                    book_description: updatedBook.book_description,
+                    staticContent: updatedBook.staticContent,
+                }
+            }
+
+            const result = await librarianCollection.updateOne(filter, book, options);
+            res.send(result);
         })
 
         app.delete('/delete-books/:id', async (req, res) => {
