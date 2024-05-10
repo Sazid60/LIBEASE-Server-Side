@@ -34,6 +34,12 @@ async function run() {
         // const allBookCollection = client.db('bookDB').collection('books')
         const librarianCollection = client.db('librarianDB').collection('librarianBooks')
 
+        // Get All Added Data
+        app.get('/all-books', async(req,res)=>{
+            const cursor = librarianCollection.find();
+            const result = await cursor.toArray();
+            res.send(result)
+        })
 
         // Add Craft & Art
         app.post('/add-book', async (req, res) => {
