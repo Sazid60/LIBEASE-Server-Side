@@ -46,7 +46,7 @@ async function run() {
         })
         // Get All Borrowed Data
         app.get('/borrowed-books/:email', async (req, res) => {
-            const result = await borrowCollection.find({borrower_email: req.params.email}).toArray()
+            const result = await borrowCollection.find({ borrower_email: req.params.email }).toArray()
             res.send(result)
         })
         // Get Categorized Data 
@@ -84,6 +84,14 @@ async function run() {
             const borrowedBook = req.body;
             console.log(borrowedBook)
             const result = await borrowCollection.insertOne(borrowedBook);
+
+            // update book count in jobs collection
+            const updateDoc = {
+                $inc: { book_quantity: -1 },
+            }
+            const borrowQuery = { _id: new ObjectId(borrowedBook.borrow_id) }
+            const updateBookQuantity = await librarianCollection.updateOne(borrowQuery, updateDoc)
+            console.log(updateBookQuantity)
             res.send(result)
         })
 
@@ -112,11 +120,29 @@ async function run() {
             res.send(result);
         })
 
+        // Delete Book
         app.delete('/delete-books/:id', async (req, res) => {
             const id = req.params.id
             console.log('Please delete', id)
             const query = { _id: new ObjectId(id) }
             const result = await librarianCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        // Delete Borrowed Book Book
+        app.delete('/delete-borrowed-books/:id', async (req, res) => {
+            const id = req.params.id
+            console.log('Please delete', id)
+            const query = { borrow_id: id }
+            const result = await borrowCollection.deleteOne(query)
+
+            // update Book count in jobs collection
+            const updateDoc = {
+                $inc: { book_quantity: 1 },
+            }
+            const borrowQuery = { _id: new ObjectId(id) }
+            const updateBookQuantity = await librarianCollection.updateOne(borrowQuery, updateDoc)
+            console.log(updateBookQuantity)
             res.send(result)
         })
 
