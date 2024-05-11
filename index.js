@@ -44,6 +44,11 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result)
         })
+        // Get All Borrowed Data
+        app.get('/borrowed-books/:email', async (req, res) => {
+            const result = await borrowCollection.find({borrower_email: req.params.email}).toArray()
+            res.send(result)
+        })
         // Get Categorized Data 
         app.get('/categorizedBooks/:category', async (req, res) => {
             const result = await librarianCollection.find({ book_category: req.params.category }).toArray()
@@ -84,7 +89,7 @@ async function run() {
 
         // update Book 
         app.put('/update/:id', async (req, res) => {
-            
+
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const options = { upsert: true };
