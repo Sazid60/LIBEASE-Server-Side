@@ -36,6 +36,8 @@ async function run() {
 
         const categoryCollection = client.db('librarianDB').collection('category')
 
+        const borrowCollection = client.db('librarianDB').collection('borrower')
+
         // Get All Added Data
         app.get('/all-books', async (req, res) => {
             const cursor = librarianCollection.find();
@@ -64,11 +66,19 @@ async function run() {
             res.send(result)
         })
 
-        // Add Craft & Art
+        // Add a Book
         app.post('/add-book', async (req, res) => {
             const newBook = req.body;
             console.log(newBook)
             const result = await librarianCollection.insertOne(newBook);
+            res.send(result)
+        })
+
+        // Add a Borrow Data
+        app.post('/add-borrowed-book', async (req, res) => {
+            const borrowedBook = req.body;
+            console.log(borrowedBook)
+            const result = await borrowCollection.insertOne(borrowedBook);
             res.send(result)
         })
 
