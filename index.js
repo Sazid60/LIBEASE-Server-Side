@@ -40,7 +40,18 @@ async function run() {
 
         // Get All Added Data
         app.get('/all-books', async (req, res) => {
-            const cursor = librarianCollection.find();
+
+
+            let filter = {};
+
+            if (req.query.filter === "available") {
+                filter = { book_quantity: { $gt: parseInt("0") } };
+            }
+            else if (req.query.filter === "stockOut") {
+                filter = { book_quantity: { $lte: parseInt("0") } };
+            }
+
+            const cursor = librarianCollection.find(filter);
             const result = await cursor.toArray();
             res.send(result)
         })
@@ -83,9 +94,23 @@ async function run() {
         app.post('/add-borrowed-book', async (req, res) => {
             const borrowedBook = req.body;
             console.log(borrowedBook)
+
+            const query = {
+                borrower_email: borrowedBook.borrower_email,
+                borrow_id: borrowedBook.borrow_id,
+            }
+            const alreadyBorrowed = await borrowCollection.findOne(query)
+            console.log(alreadyBorrowed)
+
+            if (alreadyBorrowed) {
+                return res
+                    .status(400)
+                    .send('You have already Borrowed This Book.')
+            }
+
             const result = await borrowCollection.insertOne(borrowedBook);
 
-            // update book count in jobs collection
+            // update book count
             const updateDoc = {
                 $inc: { book_quantity: -1 },
             }
@@ -129,14 +154,14 @@ async function run() {
             res.send(result)
         })
 
-        // Delete Borrowed Book Book
+        // Delete Borrowed Book
         app.delete('/delete-borrowed-books/:id', async (req, res) => {
             const id = req.params.id
             console.log('Please delete', id)
             const query = { borrow_id: id }
             const result = await borrowCollection.deleteOne(query)
 
-            // update Book count in jobs collection
+            // update Book count in 
             const updateDoc = {
                 $inc: { book_quantity: 1 },
             }
