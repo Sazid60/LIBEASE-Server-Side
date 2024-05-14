@@ -84,7 +84,7 @@ async function run() {
         app.post('/jwt', async(req,res)=>{
             const user = req.body
             // console.log('User For Token', user)
-            const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET, {expiresIn:'1h'})
+            const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET, {expiresIn:'365d'})
 
             res.cookie('token',token,cookieOption).send({success:true})
         })
@@ -95,6 +95,8 @@ async function run() {
 
             res.clearCookie('token',  { ...cookieOption, maxAge: 0 }).send({success:true})
         })
+
+        // This Logic Is Not Sustainable. I might Change it latter
 
         app.get('/admin-email', async (req, res) => {
                 const adminInfo = await librarianCollection.findOne({}, { projection: { 'adminInfo.admin_email': 1, _id: 0 } });
