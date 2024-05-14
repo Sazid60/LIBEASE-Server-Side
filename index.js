@@ -1,6 +1,12 @@
 const express = require('express')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
+
+// Token Related
+const jwt = require('jsonwebtoken')
+
+const cookieParser = require('cookie-parser')
+
 require('dotenv').config();
 
 const app = express()
@@ -8,8 +14,37 @@ const port = process.env.PORT || 5000;
 
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin :[
+        'http://localhost:5173',
+        'https://libease-client-b9a11-57399.web.app',
+        'https://libease-client-b9a11-57399.firebaseapp.com'
+    ],
+    credentials : true
+}));
 app.use(express.json());
+
+app.use(cookieParser())
+
+// Our Own Middleware
+
+const verifyToken = (req, res, next) => {
+    const token = req.cookies.token
+    console.log('Token In The Middleware', token)
+
+    if (!token) {
+        return res.status(401).send({ message: 'Access Not Authorized' })
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'Access Not Authorized' })
+        }
+        req.user = decoded;
+        next()
+
+    })
+
+}
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.cjbmdks.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -23,12 +58,17 @@ const client = new MongoClient(uri, {
     }
 });
 
+const cookieOption = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+}
 
 
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         // Collection-1
         // const allBookCollection = client.db('bookDB').collection('books')
@@ -38,17 +78,47 @@ async function run() {
 
         const borrowCollection = client.db('librarianDB').collection('borrower')
 
+        // __________________________________________Token Operations_______________________________________
+
+        // Login & Registration Token
+        app.post('/jwt', async(req,res)=>{
+            const user = req.body
+            // console.log('User For Token', user)
+            const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET, {expiresIn:'1h'})
+
+            res.cookie('token',token,cookieOption).send({success:true})
+        })
+
+        //Token clearing
+        app.post('/logout', async(req,res)=>{
+            const user = req.body;
+
+            res.clearCookie('token',  { ...cookieOption, maxAge: 0 }).send({success:true})
+        })
+
+        app.get('/admin-email', async (req, res) => {
+                const adminInfo = await librarianCollection.findOne({}, { projection: { 'adminInfo.admin_email': 1, _id: 0 } });
+                res.json(adminInfo.adminInfo.admin_email);
+        });
+
+        // ________________________________________All Operations____________________________________________
+        
         // Get All Added Data
-        app.get('/all-books', async (req, res) => {
+        app.get('/all-books',verifyToken, async (req, res) => {
 
-
+            // Logic Jabe ekahne jodi logged in user er email !== admin email
+            const adminInfo = await librarianCollection.findOne({}, { projection: { 'adminInfo.admin_email': 1, _id: 0 } });
+            if(req.query.email !== adminInfo.adminInfo.admin_email){
+                return res.status(403).send('Forbidden Access')
+            }
+            // console.log('Cookies :',req.cookies)
             let filter = {};
 
             if (req.query.filter === "available") {
-                filter = { book_quantity: { $gt: parseInt("0") } };
+                filter = { book_quantity: { $gt: parseInt("0")}};
             }
             else if (req.query.filter === "stockOut") {
-                filter = { book_quantity: { $lte: parseInt("0") } };
+                filter = { book_quantity: { $lte: parseInt("0")} };
             }
 
             const cursor = librarianCollection.find(filter);
@@ -83,9 +153,15 @@ async function run() {
         })
 
         // Add a Book
-        app.post('/add-book', async (req, res) => {
+        app.post('/add-book',verifyToken, async (req, res) => {
             const newBook = req.body;
-            console.log(newBook)
+
+            // Logic Jabe ekahne jodi logged in user er email !== admin email
+            const adminInfo = await librarianCollection.findOne({}, { projection: { 'adminInfo.admin_email': 1, _id: 0 } });
+            if(req.query.email !== adminInfo.adminInfo.admin_email){
+                return res.status(403).send('Forbidden Access')
+            }
+            // console.log(newBook)
             const result = await librarianCollection.insertOne(newBook);
             res.send(result)
         })
@@ -93,7 +169,7 @@ async function run() {
         // Add a Borrow Data
         app.post('/add-borrowed-book', async (req, res) => {
             const borrowedBook = req.body;
-            console.log(borrowedBook)
+            // console.log(borrowedBook)
 
             const query = {
                 borrower_email: borrowedBook.borrower_email,
@@ -148,7 +224,7 @@ async function run() {
         // Delete Book
         app.delete('/delete-books/:id', async (req, res) => {
             const id = req.params.id
-            console.log('Please delete', id)
+            // console.log('Please delete', id)
             const query = { _id: new ObjectId(id) }
             const result = await librarianCollection.deleteOne(query)
             res.send(result)
@@ -157,7 +233,7 @@ async function run() {
         // Delete Borrowed Book
         app.delete('/delete-borrowed-books/:id', async (req, res) => {
             const id = req.params.id
-            console.log('Please delete', id)
+            // console.log('Please delete', id)
             const query = { borrow_id: id }
             const result = await borrowCollection.deleteOne(query)
 
@@ -172,10 +248,9 @@ async function run() {
         })
 
 
-
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
