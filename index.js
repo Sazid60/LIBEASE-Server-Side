@@ -199,7 +199,7 @@ async function run() {
         })
 
         // update Book 
-        app.put('/update/:id', async (req, res) => {
+        app.put('/update/:id',verifyToken, async (req, res) => {
 
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
@@ -224,7 +224,7 @@ async function run() {
         })
 
         // Delete Book
-        app.delete('/delete-books/:id', async (req, res) => {
+        app.delete('/delete-books/:id',verifyToken, async (req, res) => {
             const id = req.params.id
             // console.log('Please delete', id)
             const query = { _id: new ObjectId(id) }
