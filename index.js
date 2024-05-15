@@ -106,7 +106,7 @@ async function run() {
         // ________________________________________All Operations____________________________________________
         
         // Get All Added Data
-        app.get('/all-books',verifyToken, async (req, res) => {
+        app.get('/all-books', async (req, res) => {
 
             // Logic Jabe ekahne jodi logged in user er email !== admin email
             const adminInfo = await librarianCollection.findOne({}, { projection: { 'adminInfo.admin_email': 1, _id: 0 } });
