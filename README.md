@@ -7,9 +7,9 @@
 #### Website URL: [https://libease-client-b9a11-57399.web.app/](https://libease-client-b9a11-57399.web.app/)
 
 
-## ADMIN LOGIN DETAILS
-#### Admin-Email : shahnawazsazid60@gmail.com
-#### Admin-Password : Phb9A11
+## ADMIN/LIBRARIAN LOGIN DETAILS
+#### Admin/librarian-Email : shahnawazsazid60@gmail.com
+#### Admin/Librarian-Password : Phb9A11
 
 
 ### Features & Characteristics:
